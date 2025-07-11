@@ -1,5 +1,5 @@
 pub const interface = struct {
-    name: []const u8,
-    value: []const u8,
-    help: []const u8,
+    name: [*:0]const u8,
+    value: [*:0]const u8,
+    help: [*:0]const u8,
 };

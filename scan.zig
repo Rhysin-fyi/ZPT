@@ -1,11 +1,11 @@
-const interface = @import("handler.zig").interface;
+const handler_interface = @import("handler.zig");
 
-export fn getNumber() *const interface {
-    var init = interface{
-        .name = "getNumber",
-        .value = "42",
-        .help = "Returns the number 42",
+export fn getNumber() callconv(.C) ?*const handler_interface.interface {
+    const set_default = handler_interface.interface{
+        .name = "default",
+        .value = "0",
+        .help = "This is a default handler interface.",
     };
 
-    return &init;
+    return &set_default;
 }
