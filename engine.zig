@@ -1,14 +1,22 @@
 const std = @import("std");
-const std_dyn = @import("std").DynLib;
+const interface = @import("handler.zig").interface;
 
+pub fn loadDynLib(modname: []const u8, stdout: anytype) !void {
+    var loaded_lib = try std.DynLib.open(modname);
 
-pub fn loadDynLib(modname: []const u8) !void {
-    var loaded_lib = try std_dyn.open(modname);
     defer loaded_lib.close();
+
+    try stdout.print("Module '{s}' loaded successfully.\n", .{modname});
+    const get_Number = loaded_lib.lookup(*const fn () interface, "getNumber") orelse return error.ModuleFunctionNotFound;
+    try stdout.print("Function '{s}' imported successfully.\n", .{modname});
+
+    const get_struct = get_Number();
+    _ = get_struct; // Use the struct to avoid unused variable warning
+    //try stdout.print("Function 'getNumber' found in module '{s}'.\n", .{get_struct.name}); // try stdout.print("Function 'getNumber' found in module '{d}'.\n", .{get_Number()});
 }
 
-fn loadHandler(moduleName: []const u8) !void {
-    try loadDynLib(moduleName);
+fn loadHandler(moduleName: []const u8, stdout: anytype) !void {
+    try loadDynLib(moduleName, stdout);
 }
 
 pub fn parseCommand(input: []const u8, stdout: anytype) !void {
@@ -25,6 +33,6 @@ pub fn parseCommand(input: []const u8, stdout: anytype) !void {
         try stdout.print("    load <module>\n\n", .{});
     } else if (std.mem.eql(u8, cmd, "load")) {
         const moduleName = parts.next() orelse "(no module name)";
-        try loadHandler(moduleName);
+        try loadHandler(moduleName, stdout);
     }
 }
