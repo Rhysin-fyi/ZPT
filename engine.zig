@@ -7,29 +7,11 @@ pub fn loadDynLib(modname: []const u8, stdout: anytype) !void {
     defer loaded_lib.close();
 
     try stdout.print("Module '{s}' loaded successfully.\n", .{modname});
-    //const get_Number = loaded_lib.lookup(*const fn () interface, "getNumber") orelse return error.ModuleFunctionNotFound;
-    const get_Number = loaded_lib.lookup(*const fn () callconv(.C) ?*const handler_interface.interface, "getNumber") orelse return error.ModuleFunctionNotFound;
+    const get_Number = loaded_lib.lookup(*const fn () callconv(.C) *const handler_interface.interface, "getNumber") orelse return error.ModuleFunctionNotFound;
 
     try stdout.print("Function 'getNumber' imported successfully.\n", .{});
     const assign_struct = get_Number(); // Call the function to ensure it is loaded
-    try stdout.print("Function 'getNumber' returned a pointer to interface. {any}\n", .{assign_struct});
-
-    //// call it
-    //if (get_Number()) |iface| {
-    //    try stdout.print("name={s}, value={s}, help={s}\n", .{
-    //        std.mem.span(iface.name),
-    //        std.mem.span(iface.value),
-    //        std.mem.span(iface.help),
-    //    });
-    //} else {
-    //    try stdout.print("getNumber returned null\n", .{});
-    //}
-    //
-    //try stdout.print("Function '{s}' imported successfully.\n", .{modname});
-
-    //const get_struct: interface = get_Number();
-    // = get_struct; // Use the struct to avoid unused variable warning
-    //try stdout.print("Function 'getNumber' found in module '{s}'.\n", .{get_Number.name}); // try stdout.print("Function 'getNumber' found in module '{d}'.\n", .{get_Number()});
+    try stdout.print("Function 'getNumber' returned a pointer to interface. {s}\n", .{std.mem.span(assign_struct.name)});
 }
 
 fn loadHandler(moduleName: []const u8, stdout: anytype) !void {
