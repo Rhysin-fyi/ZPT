@@ -1,6 +1,8 @@
 const std = @import("std");
 const engine = @import("engine.zig");
 
+const FAIL_GRACEFULLY = false;
+
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
     const stdin = std.io.getStdIn().reader();
@@ -11,6 +13,11 @@ pub fn main() !void {
         const line = try stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
         const input = std.mem.trim(u8, line, " \r\n");
 
-        try engine.parseCommand(input, stdout);
+        engine.parseCommand(input, stdout) catch |err| {
+            if (err == engine.EngineError.UserExit) return;
+            if (!FAIL_GRACEFULLY) return err else {
+                std.debug.print("{!}\n", .{err});
+            }
+        };
     }
 }
