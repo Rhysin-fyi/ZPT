@@ -1,6 +1,7 @@
 const std = @import("std");
 const File = std.fs.File;
 const Interface = @import("plugins/handler.zig").Interface;
+const Zigface = @import("plugins/handler.zig").Zigface;
 
 pub const EngineError = error{
     UserExit,
@@ -52,22 +53,31 @@ fn listPlugins(stdout: File.Writer) !void {
 }
 
 fn loadHandler(plugin_name: []const u8, stdout: File.Writer) !void {
-    //TODO: add string handling so path "./zig-out/lib/lib*.so" doesn't need to be typed out
-    try loadDynLib(plugin_name, stdout);
+    var dba = std.heap.DebugAllocator(.{}){};
+    const allocator = dba.allocator();
+    const plugin_path = try std.fmt.allocPrint(allocator, "./zig-out/lib/lib{s}.so", .{
+        plugin_name,
+    });
+
+    try loadDynLib(plugin_path, stdout);
 }
 
 pub fn loadDynLib(plugin_path: []const u8, stdout: File.Writer) !void {
     _ = stdout;
     var loaded_lib = try std.DynLib.open(plugin_path);
     defer loaded_lib.close();
-    std.debug.print("plugin '{s}' loaded successfully.\n", .{plugin_path});
 
     const get_Number = loaded_lib.lookup(*const fn () callconv(.C) *Interface, "getNumber") orelse return EngineError.FunctionNotFound;
-    std.debug.print("Function 'getNumber' imported successfully.\n", .{});
 
     const assign_struct = get_Number(); // Call the function to ensure it is loaded
     std.debug.print(
         "Function 'getNumber' returned a pointer to interface: {s}.\nvalue={s}\nhelp={s}\n",
         .{ std.mem.span(assign_struct.name), std.mem.span(assign_struct.value), std.mem.span(assign_struct.help) },
     );
+
+    const walter_white = assign_struct.ptr;
+    walter_white.sayMyName();
+    walter_white.happyBirthday();
+    walter_white.happyBirthday();
+    walter_white.happyBirthday();
 }
