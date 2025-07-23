@@ -11,7 +11,7 @@ pub fn loadDynLib(modname: []const u8, stdout: anytype) !void {
 
     try stdout.print("Function 'getNumber' imported successfully.\n", .{});
     const assign_struct = get_Number(); // Call the function to ensure it is loaded
-    try stdout.print("Function 'getNumber' returned a pointer to interface. {s}\n", .{std.mem.span(assign_struct.name)});
+    try stdout.print("Function 'getNumber' returned a pointer to interface. {s} {s}\n", .{std.mem.span(assign_struct.name), std.mem.span(assign_struct.help)});
 }
 
 fn loadHandler(moduleName: []const u8, stdout: anytype) !void {

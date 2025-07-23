@@ -1,7 +1,7 @@
 const handler_interface = @import("handler.zig");
 
 const set_default = handler_interface.interface{
-    .name = "default",
+    .name = "HELLO",
     .value = "0",
     .help = "This is a default handler interface.",
 };
