@@ -27,8 +27,7 @@ pub fn parseCommand(input: []const u8, stdout: File.Writer) !void {
         .help => showHelp(stdout),
         .exit => {
             try stdout.print("Exiting...\n", .{});
-            // this is def the wrong way to do this
-            return EngineError.UserExit;
+            return EngineError.UserExit; // this is def the wrong way to do this
         },
         .list => listPlugins(stdout),
         .load => {
