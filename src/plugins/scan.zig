@@ -1,28 +1,26 @@
 const std = @import("std");
 const handler = @import("handler.zig");
-const Info = handler.Info;
-const Option = handler.Plugin.Option;
 
-var set_default = Info{
-    .name = "NAME",
-    .value = "42",
-    .help = "This is a default handler interface.",
-    .Plugin = &scan,
+var plugin_contex = handler.Context{
+    .plugin_name = "Scan",
+    .plugin_help = "I'm a scanner, I scan things.",
+    .options = @constCast(&default_options),
 };
 
-const options = [_]Option{
+const default_options = [_]handler.Option{
     .{ .key = "RHOST", .value = "127.0.0.1", .help = "Remote host" },
     .{ .key = "LPORT", .value = "4444", .help = "Local port" },
 };
-const options_slice: []const Option = &options;
 
-var scan = handler.Plugin.init("scan", @constCast(options_slice));
+export fn getOpts(ctx: *handler.Context) callconv(.C) void {
+    ctx.* = plugin_contex;
+}
 
-// fn getOptions() []Option {
-//     return &options;
-// }
+export fn setOpts(ctx: *handler.Context) callconv(.C) void {
+    plugin_contex = ctx.*;
+}
 
-export fn getInfo() callconv(.C) *Info {
-    set_default.name = "default";
-    return @constCast(&set_default);
+export fn run(ctx: *handler.Context) callconv(.C) void {
+    _ = ctx;
+    return;
 }
