@@ -1,27 +1,28 @@
 const std = @import("std");
-const Interface = @import("handler.zig").Interface;
-const Zigface = @import("handler.zig").Zigface;
+const handler = @import("handler.zig");
+const Info = handler.Info;
+const Option = handler.Plugin.Option;
 
-var set_default = Interface{
+var set_default = Info{
     .name = "NAME",
     .value = "42",
     .help = "This is a default handler interface.",
-    .ptr = &Heisenberg,
+    .Plugin = &scan,
 };
 
-var Heisenberg = Zigface{
-    .name = "Heisenberg",
-    .age = 42,
+const options = [_]Option{
+    .{ .key = "RHOST", .value = "127.0.0.1", .help = "Remote host" },
+    .{ .key = "LPORT", .value = "4444", .help = "Local port" },
 };
+const options_slice: []const Option = &options;
 
-export fn getNumber() callconv(.C) *Interface {
-    return @constCast(&set_default);
-}
-export fn setNumber() callconv(.C) *Interface {
+var scan = handler.Plugin.init("scan", @constCast(options_slice));
+
+// fn getOptions() []Option {
+//     return &options;
+// }
+
+export fn getInfo() callconv(.C) *Info {
     set_default.name = "default";
     return @constCast(&set_default);
-}
-
-fn hello() void {
-    std.debug.print("helloo from the LIBRARYYYYYY!", .{});
 }

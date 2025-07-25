@@ -1,7 +1,7 @@
 const std = @import("std");
 const File = std.fs.File;
-const Interface = @import("plugins/handler.zig").Interface;
-const Zigface = @import("plugins/handler.zig").Zigface;
+const Info = @import("plugins/handler.zig").Info;
+const handler = @import("plugins/handler.zig");
 
 pub const EngineError = error{
     UserExit,
@@ -67,17 +67,19 @@ pub fn loadDynLib(plugin_path: []const u8, stdout: File.Writer) !void {
     var loaded_lib = try std.DynLib.open(plugin_path);
     defer loaded_lib.close();
 
-    const get_Number = loaded_lib.lookup(*const fn () callconv(.C) *Interface, "getNumber") orelse return EngineError.FunctionNotFound;
+    const get_Info = loaded_lib.lookup(*const fn () callconv(.C) *Info, "getInfo") orelse return EngineError.FunctionNotFound;
 
-    const assign_struct = get_Number(); // Call the function to ensure it is loaded
+    const info = get_Info(); // Call the function to ensure it is loaded
     std.debug.print(
-        "Function 'getNumber' returned a pointer to interface: {s}.\nvalue={s}\nhelp={s}\n",
-        .{ std.mem.span(assign_struct.name), std.mem.span(assign_struct.value), std.mem.span(assign_struct.help) },
+        "Function 'getInfo' returned a pointer to interface: {s}.\nvalue={s}\nhelp={s}\n",
+        .{ std.mem.span(info.name), std.mem.span(info.value), std.mem.span(info.help) },
     );
 
-    const walter_white = assign_struct.ptr;
-    walter_white.sayMyName();
-    walter_white.happyBirthday();
-    walter_white.happyBirthday();
-    walter_white.happyBirthday();
+    const plugin = info.Plugin.*;
+    std.debug.print("Plugin \"{s}\" was returned\n", .{plugin.name});
+    // plugin.getOptions();
+    const options = plugin.opts;
+    for (options, 0..) |opt, idx| {
+        std.debug.print("Option {d} = Key: {s}, Value: {s}, Help: {s}\n", .{ idx, opt.key, opt.value, opt.help });
+    }
 }

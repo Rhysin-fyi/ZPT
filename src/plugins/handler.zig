@@ -1,22 +1,50 @@
 const std = @import("std");
 
-pub const Interface = extern struct {
+pub const Info = extern struct {
     name: [*:0]const u8,
     value: [*:0]const u8,
     help: [*:0]const u8,
-    ptr: *Zigface,
+    Plugin: *Plugin,
 };
 
-pub const Zigface = struct {
-    name: []const u8 = "Heisenberg",
-    age: u32 = 30,
+//write this like an allocator with a config struct passed in
 
-    pub fn sayMyName(self: Zigface) void {
-        std.debug.print("{s}\n", .{self.name});
+pub const Plugin = struct {
+    name: []const u8,
+    opts: []Option,
+
+    pub fn init(name: []const u8, options: []Option) Plugin {
+        return Plugin{
+            .name = name,
+            .opts = options,
+        };
     }
 
-    pub fn happyBirthday(self: *Zigface) void {
-        self.age += 1;
-        std.debug.print("happy birthday!, you are now {d} years old!\n", .{self.age});
+    pub const Option = struct {
+        key: []const u8,
+        value: []const u8,
+        help: []const u8,
+    };
+
+    pub fn getOptions() void {
+        std.debug.print("getting options...\n", .{});
+    }
+    pub fn setOptions() void {
+        std.debug.print("setting options x to value y...\n", .{});
+    }
+    pub fn run() void {
+        std.debug.print("run Forest, run!", .{});
+    }
+};
+
+// pub const FuncTab = struct {
+
+// }
+
+pub const sopt = struct {
+    name: []const u8,
+
+    pub fn init(self: *sopt, name: []const u8) void {
+        self.name = name;
     }
 };
