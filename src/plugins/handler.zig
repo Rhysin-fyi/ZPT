@@ -36,15 +36,3 @@ pub const Plugin = struct {
         std.debug.print("run Forest, run!", .{});
     }
 };
-
-// pub const FuncTab = struct {
-
-// }
-
-pub const sopt = struct {
-    name: []const u8,
-
-    pub fn init(self: *sopt, name: []const u8) void {
-        self.name = name;
-    }
-};
