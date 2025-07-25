@@ -10,7 +10,7 @@ pub fn main() !void {
         try stdout.print("zpt> ", .{});
         const line = try stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
         const input = std.mem.trim(u8, line, " \r\n");
-
+//        if (std.mem.eql(u8,input,"exit")) break else continue;
         try engine.parseCommand(input, stdout);
     }
 }

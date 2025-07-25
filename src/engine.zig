@@ -1,6 +1,7 @@
 const std = @import("std");
 const File = std.fs.File;
 const Interface = @import("plugins/handler.zig").Interface;
+const Option = @import("plugins/handler.zig").Option;
 
 pub const PluginError = error{
     FunctionNotFound,
@@ -12,9 +13,7 @@ pub fn parseCommand(input: []const u8, stdout: File.Writer) !void {
 
     // TODO: make this more modular
     // more of a arg parser than a if else tree
-    if (std.mem.eql(u8, cmd, "exit")) {
-        try stdout.print("Exiting...\n", .{});
-    } else if (std.mem.eql(u8, cmd, "help")) {
+    if (std.mem.eql(u8, cmd, "help")) {
         try showHelp(stdout);
     } else if (std.mem.eql(u8, cmd, "load")) {
         const plugin_name = parts.next() orelse "(no plugin name)";
@@ -26,7 +25,6 @@ pub fn showHelp(stdout: File.Writer) !void {
     try stdout.print(
         \\Available commands:
         \\    help - show this message
-        \\    exit - exit console
         \\    list - show all available plugins
         \\    load <plugin>
     ++ "\n\n", .{});
@@ -43,12 +41,25 @@ pub fn loadDynLib(plugin_path: []const u8, stdout: File.Writer) !void {
     defer loaded_lib.close();
     std.debug.print("plugin '{s}' loaded successfully.\n", .{plugin_path});
 
-    const get_Number = loaded_lib.lookup(*const fn () callconv(.C) *Interface, "getNumber") orelse return PluginError.FunctionNotFound;
-    std.debug.print("Function 'getNumber' imported successfully.\n", .{});
+    const get_Number = loaded_lib.lookup(*const fn () callconv(.C) *Interface, "SetDefault") orelse return PluginError.FunctionNotFound;
+    std.debug.print("Function 'SetDefault' imported successfully.\n", .{});
 
     const assign_struct = get_Number(); // Call the function to ensure it is loaded
     std.debug.print(
         "Function 'getNumber' returned a pointer to interface: {s}.\n value={s}\nhelp={s}\n",
         .{ std.mem.span(assign_struct.name), std.mem.span(assign_struct.value), std.mem.span(assign_struct.help) },
     );
+
+    const DefaultLen = loaded_lib.lookup(*const fn() callconv(.C) u8, "GetLn") orelse return PluginError.FunctionNotFound;
+    const returnLen = DefaultLen();
+    std.debug.print("LEN OF DEFAULT {d}\n\n", .{returnLen});
+
+
+    const getDefault = loaded_lib.lookup(*const fn(x: u8) callconv(.C) *Option, "GetOptions") orelse return PluginError.FunctionNotFound;
+    
+    for (0..returnLen) |x|{
+        const returnDefault = getDefault(@intCast(x));
+            
+        std.debug.print("Hello {s} {s} {s}\n", .{returnDefault.key, returnDefault.value, returnDefault.help });
+    }
 }
