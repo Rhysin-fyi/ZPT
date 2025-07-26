@@ -1,5 +1,8 @@
 const std = @import("std");
 const File = std.fs.File;
+const zlua = @import("zlua");
+
+const Lua = zlua.Lua;
 
 pub const EngineError = error{
     UserExit,
@@ -34,8 +37,7 @@ pub fn parseCommand(input: []const u8, stdout: File.Writer) !void {
         },
         .list => listPlugins(stdout, allocator),
         .load => {
-            // const plugin_name = parts.next() orelse "(no plugin name)";
-            // try loadHandler(plugin_name, stdout);
+            try luaTest();
         },
     };
 }
@@ -64,4 +66,16 @@ fn listPlugins(stdout: File.Writer, allocator: std.mem.Allocator) !void {
         });
     }
     std.debug.print("\n", .{});
+}
+
+pub fn luaTest() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+
+    var lua = try Lua.init(allocator);
+    defer lua.deinit();
+
+    lua.pushInteger(42);
+    std.debug.print("{}\n", .{try lua.toInteger(1)});
 }

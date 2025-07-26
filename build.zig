@@ -15,6 +15,13 @@ pub fn build(b: *std.Build) void {
         .root_module = exe_mod,
     });
 
+    const lua_dep = b.dependency("zlua", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    // adds the zlua module and lua artifact
+    exe.root_module.addImport("zlua", lua_dep.module("zlua"));
+
     //exe.linkLibC();
     b.installArtifact(exe);
 

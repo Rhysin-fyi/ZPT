@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine.zig");
+const zlua = @import("zlua");
 
 const FAIL_GRACEFULLY = false;
 
