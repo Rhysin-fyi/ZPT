@@ -2,6 +2,7 @@ const std = @import("std");
 const zlua = @import("zlua");
 
 const Lua = zlua.Lua;
+const LuaState = zlua.LuaState;
 
 pub const EngineError = error{
     UserExit,
@@ -36,7 +37,7 @@ pub fn parseCommand(input: []const u8, stdout: std.fs.File.Writer) !void {
         },
         .list => listPlugins(stdout, allocator),
         .load => {
-            try luaTest();
+            try luaTest(allocator);
         },
     };
 }
@@ -67,11 +68,7 @@ fn listPlugins(stdout: std.fs.File.Writer, allocator: std.mem.Allocator) !void {
     std.debug.print("\n", .{});
 }
 
-fn luaTest() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
-
+fn luaTest(allocator: std.mem.Allocator) !void {
     var lua = try Lua.init(allocator);
     defer lua.deinit();
     lua.openLibs();
@@ -79,10 +76,10 @@ fn luaTest() !void {
     lua.pushFunction(&testLua);
     lua.setGlobal("testLua");
 
-    try lua.doFile("./scripts/scan.lua");
+    try lua.doFile("./scripts/scan.zpt");
 }
 
-export fn testLua(lua: ?*zlua.LuaState) callconv(.c) c_int {
+export fn testLua(lua: ?*LuaState) callconv(.c) c_int {
     _ = lua;
     std.debug.print("I am a function called from Lua\n", .{});
     return 0;
