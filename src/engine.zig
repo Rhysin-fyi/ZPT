@@ -1,5 +1,4 @@
 const std = @import("std");
-const File = std.fs.File;
 const zlua = @import("zlua");
 
 const Lua = zlua.Lua;
@@ -17,7 +16,7 @@ pub const Cmds = enum {
     load,
 };
 
-pub fn parseCommand(input: []const u8, stdout: File.Writer) !void {
+pub fn parseCommand(input: []const u8, stdout: std.fs.File.Writer) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer if (gpa.deinit() != .ok) @panic("leak");
     const allocator = gpa.allocator();
@@ -42,7 +41,7 @@ pub fn parseCommand(input: []const u8, stdout: File.Writer) !void {
     };
 }
 
-fn showHelp(stdout: File.Writer) !void {
+fn showHelp(stdout: std.fs.File.Writer) !void {
     try stdout.print(
         \\Available commands:
         \\    help - show this message
@@ -52,7 +51,7 @@ fn showHelp(stdout: File.Writer) !void {
     ++ "\n\n", .{});
 }
 
-fn listPlugins(stdout: File.Writer, allocator: std.mem.Allocator) !void {
+fn listPlugins(stdout: std.fs.File.Writer, allocator: std.mem.Allocator) !void {
     try stdout.print("Available Plugins:\n", .{});
     var dir = try std.fs.cwd().openDir("scripts", .{ .iterate = true });
     defer dir.close();
@@ -75,7 +74,7 @@ pub fn luaTest() !void {
 
     var lua = try Lua.init(allocator);
     defer lua.deinit();
+    lua.openLibs();
 
-    lua.pushInteger(42);
-    std.debug.print("{}\n", .{try lua.toInteger(1)});
+    try lua.doFile("/home/karma/projects/zig/ZPT/scripts/scan.lua");
 }
