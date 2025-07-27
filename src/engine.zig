@@ -79,7 +79,7 @@ fn luaTest() !void {
     lua.pushFunction(&testLua);
     lua.setGlobal("testLua");
 
-    try lua.doFile("/home/karma/projects/zig/ZPT/scripts/scan.lua");
+    try lua.doFile("./scripts/scan.lua");
 }
 
 export fn testLua(lua: ?*zlua.LuaState) callconv(.c) c_int {
