@@ -67,7 +67,7 @@ fn listPlugins(stdout: std.fs.File.Writer, allocator: std.mem.Allocator) !void {
     std.debug.print("\n", .{});
 }
 
-pub fn luaTest() !void {
+fn luaTest() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
@@ -76,5 +76,14 @@ pub fn luaTest() !void {
     defer lua.deinit();
     lua.openLibs();
 
+    lua.pushFunction(&testLua);
+    lua.setGlobal("testLua");
+
     try lua.doFile("/home/karma/projects/zig/ZPT/scripts/scan.lua");
+}
+
+export fn testLua(lua: ?*zlua.LuaState) callconv(.c) c_int {
+    _ = lua;
+    std.debug.print("I am a function called from Lua\n", .{});
+    return 0;
 }
