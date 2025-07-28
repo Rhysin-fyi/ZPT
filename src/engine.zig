@@ -65,7 +65,7 @@ fn listPlugins(stdout: std.fs.File.Writer, allocator: std.mem.Allocator) !void {
             entry.path,
         });
     }
-    std.debug.print("\n", .{});
+    try stdout.print("\n", .{});
 }
 
 fn luaTest(allocator: std.mem.Allocator) !void {
@@ -77,10 +77,21 @@ fn luaTest(allocator: std.mem.Allocator) !void {
     lua.setGlobal("testLua");
 
     try lua.doFile("./scripts/scan.zpt");
+    // const option1
+    // const option2
+    const option1 = try getGlobalInt(lua, "option1");
+    std.debug.print("option1 from lua: {d}\n", .{option1});
 }
 
 export fn testLua(lua: ?*LuaState) callconv(.c) c_int {
     _ = lua;
     std.debug.print("I am a function called from Lua\n", .{});
     return 0;
+}
+
+fn getGlobalInt(lua: *Lua, var_name: [:0]const u8) !zlua.Integer {
+    _ = try lua.getGlobal(var_name);
+    const result = try lua.toInteger(-1);
+    lua.pop(1);
+    return result;
 }
