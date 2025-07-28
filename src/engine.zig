@@ -1,5 +1,5 @@
 const std = @import("std");
-const zlua = @import("zlua");
+const zlua = @import("luajit");
 const main = @import("main.zig");
 
 const Lua = zlua.Lua;
@@ -37,7 +37,7 @@ pub fn parseCommand(input: []const u8, ctx: *main.GlobalState) !void {
         .list => listPlugins(ctx.stdout, ctx.allocator),
         .load => {
             ctx.sub_state = .Plugin;
-            ctx.plugin_name = ctx.user_input.peek() orelse undefined;
+            ctx.plugin_name = ctx.user_input.peek();
             try luaTest(ctx);
         },
     };
@@ -83,6 +83,12 @@ fn luaTest(ctx: *main.GlobalState) !void {
     // const option2
     const option1 = try getGlobalInt(lua, "option1");
     std.debug.print("option1 from lua: {d}\n", .{option1});
+}
+
+fn cleanupPlugin(ctx: *main.GlobalState, lua: *Lua) !void {
+    ctx.plugin_name = null;
+    ctx.sub_state = .Default;
+    lua.deinit();
 }
 
 export fn testLua(lua: ?*LuaState) callconv(.c) c_int {

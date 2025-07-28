@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine.zig");
-const zlua = @import("zlua");
+const zlua = @import("luajit");
 
 pub const GlobalState = struct {
     allocator: std.mem.Allocator = undefined,
@@ -8,7 +8,7 @@ pub const GlobalState = struct {
     stdout: std.fs.File.Writer = undefined,
     user_input: std.mem.TokenIterator(u8, std.mem.DelimiterType.sequence) = undefined,
     sub_state: enum { Default, Plugin } = undefined,
-    plugin_name: []const u8 = undefined,
+    plugin_name: ?[]const u8 = undefined,
 };
 
 const FAIL_GRACEFULLY = false;

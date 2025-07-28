@@ -24,6 +24,12 @@
     // original project's identity. Thus it is recommended to leave the comment
     // on the following line intact, so that it shows up in code reviews that
     // modify the field.
+    .dependencies = .{
+        .luajit = .{
+            .url = "git+https://github.com/sackosoft/zig-luajit#fc95bd40a227b7c0973e7df0e2b239b5fcdafcdc",
+            .hash = "luajit-2.0.0-nMGF0uHCAwB2j2CR4HxOsOoUq4693R1AXrVo8upDXUof",
+        },
+    },
     .fingerprint = 0x48d7bacd00059da5, // Changing this has security and trust implications.
 
     // Tracks the earliest Zig version that the package considers to be a
@@ -35,12 +41,7 @@
     // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
-    .dependencies = .{
-        .zlua = .{
-            .url = "git+https://github.com/natecraddock/ziglua#6889b2d90ee6ae96810a9f04ec7c62d9aa91d088",
-            .hash = "zlua-0.1.0-hGRpCxctBQDEQgDArJ0Kc4RDIsD-Hw3pw9pPPw_kGmmY",
-        },
-    },
+
     .paths = .{
         "build.zig",
         "build.zig.zon",
