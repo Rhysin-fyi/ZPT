@@ -1,8 +1,11 @@
 const std = @import("std");
 const zlua = @import("zlua");
+const main = @import("main.zig");
 
 const Lua = zlua.Lua;
 const LuaState = zlua.LuaState;
+
+const current_lua: ?*Lua = null;
 
 pub const EngineError = error{
     UserExit,
@@ -17,27 +20,25 @@ pub const Cmds = enum {
     load,
 };
 
-pub fn parseCommand(input: []const u8, stdout: std.fs.File.Writer) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer if (gpa.deinit() != .ok) @panic("leak");
-    const allocator = gpa.allocator();
-
-    var parts = std.mem.tokenizeSequence(u8, input, " ");
+pub fn parseCommand(input: []const u8, ctx: *main.GlobalState) !void {
+    ctx.user_input = std.mem.tokenizeSequence(u8, input, " ");
 
     const cmd = std.meta.stringToEnum(
         Cmds,
-        parts.next() orelse "help",
+        ctx.user_input.next() orelse "help",
     ) orelse Cmds.help;
 
     try switch (cmd) {
-        .help => showHelp(stdout),
+        .help => showHelp(ctx.stdout),
         .exit => {
-            try stdout.print("Exiting...\n", .{});
+            try ctx.stdout.print("Exiting...\n", .{});
             return EngineError.UserExit; // this is def the wrong way to do this
         },
-        .list => listPlugins(stdout, allocator),
+        .list => listPlugins(ctx.stdout, ctx.allocator),
         .load => {
-            try luaTest(allocator);
+            ctx.sub_state = .Plugin;
+            ctx.plugin_name = ctx.user_input.peek() orelse undefined;
+            try luaTest(ctx);
         },
     };
 }
@@ -68,9 +69,10 @@ fn listPlugins(stdout: std.fs.File.Writer, allocator: std.mem.Allocator) !void {
     try stdout.print("\n", .{});
 }
 
-fn luaTest(allocator: std.mem.Allocator) !void {
-    var lua = try Lua.init(allocator);
-    defer lua.deinit();
+fn luaTest(ctx: *main.GlobalState) !void {
+    const lua = current_lua orelse try Lua.init(ctx.allocator);
+    //defer lua.deinit();   handle this in plugin cleanup
+
     lua.openLibs();
 
     lua.pushFunction(&testLua);
