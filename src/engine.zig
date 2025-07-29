@@ -7,6 +7,8 @@ const LuaState = zlua.LuaState;
 
 const current_lua: ?*Lua = null;
 
+const FAIL_GRACEFULLY = false;
+
 pub const EngineError = error{
     UserExit,
     FunctionNotFound,
@@ -74,7 +76,6 @@ fn handlePlugin(ctx: *main.GlobalState) !void {
         ctx.sub_state = .Plugin;
         try loadPlugin(ctx);
     }
-    std.debug.print("you're in the plugin handler for \"{s}\" plugin\n", .{ctx.plugin_name});
 }
 
 fn loadPlugin(ctx: *main.GlobalState) !void {
@@ -83,47 +84,90 @@ fn loadPlugin(ctx: *main.GlobalState) !void {
         "./scripts/{s}.zpt",
         .{ctx.plugin_name},
     );
+    try ctx.stdout.print("Loading {s}\n\n", .{ctx.plugin_name});
     defer ctx.allocator.free(plugin_path);
 
     const lua = current_lua orelse try Lua.init(ctx.allocator);
-    //defer lua.deinit();   handle this in plugin cleanup
 
     lua.openLibs();
-    lua.pushFunction(&testLua);
-    lua.setGlobal("testLua");
 
     try lua.doFile(plugin_path);
-    // const option1
-    // const option2
-    const option1 = try getGlobalInt(lua, "option1");
-    std.debug.print("option1 from lua: {d}\n", .{option1});
+
+    var buf: [1024]u8 = undefined;
+    while (true) {
+        try ctx.stdout.print("zpt/{s}/> ", .{ctx.plugin_name});
+        const line = try ctx.stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
+
+        const input = std.mem.trim(u8, line, " \r\n");
+
+        var tokenizer = std.mem.tokenizeSequence(u8, input, " ");
+        const token_opt = tokenizer.next();
+
+        if (token_opt) |token| {
+            if (std.mem.eql(u8, token, "set")) {
+                const key = tokenizer.next() orelse {
+                    try ctx.stdout.print("Missing key for set\n", .{});
+                    continue;
+                };
+
+                const val = tokenizer.next() orelse {
+                    try ctx.stdout.print("Missing value for set\n", .{});
+                    continue;
+                };
+
+                try ctx.stdout.print("SETTING {s} = {s}\n", .{ key, val });
+                _ = try setOption(lua, key, val);
+            } else if (std.mem.eql(u8, token, "get")) {
+                // Further handling...
+                _ = try getOptions(lua);
+            } else if (std.mem.eql(u8, token, "quit")) {
+                try ctx.stdout.print("Bye!\n", .{});
+                break;
+            } else {
+                try ctx.stdout.print("Unknown command: {s}\n", .{token});
+            }
+        }
+    }
 }
 
 // fn cleanupPlugin(ctx: *main.GlobalState, lua: *Lua) !void {}
 
-export fn testLua(lua: ?*LuaState) callconv(.c) c_int {
-    _ = lua;
-    std.debug.print("I am a function called from Lua\n", .{});
-    return 0;
-}
-
-fn checkOption(lua: *Lua) !zlua.Integer {
+fn setOption(lua: *Lua, key: []const u8, val: []const u8) !void {
     _ = try lua.getGlobal("options");
-    if (lua.isTable(-1)) {
-        _ = lua.getField(-1, "key");
-        _ = lua.getField(-2, "value");
+    if (!lua.isTable(-1)) {
+        std.debug.print("Error: options is not a table\n", .{});
+        lua.pop(1);
+        return;
     }
-    if (lua.isString(-1)) {
-        const key = lua.toString(-2);
-        const value = lua.toString(-1);
-        std.debug.print("TESTING \nkey:{!c}\nvalue:{!c}\n", .{ key, value });
-    }
-    return 0;
+
+    //try lua.pushString(val);
+    //try lua.setField(-2, key);
+    _ = val;
+    _ = key;
+    lua.pop(1);
 }
 
-fn getGlobalInt(lua: *Lua, var_name: [:0]const u8) !zlua.Integer {
-    _ = try lua.getGlobal(var_name);
-    const result = try lua.toInteger(-1);
-    lua.pop(1);
-    return result;
+fn getOptions(lua: *Lua) !void {
+    _ = try lua.getGlobal("options");
+    if (!lua.isTable(-1)) {
+        _ = lua.pushString("Expected a table as argument");
+        _ = lua.raiseError();
+        return 0;
+    }
+
+    lua.pushNil();
+    std.debug.print("Printing options...\n\n", .{});
+    while (lua.next(1)) {
+        const key = lua.toString(-2) catch "<non-string key>";
+        const val = if (lua.isString(-1))
+            lua.toString(-1) catch "<invalid>"
+        else if (lua.isNumber(-1))
+            std.fmt.allocPrintZ(std.heap.page_allocator, "{d}", .{lua.toNumber(-1) catch 0}) catch "<num>"
+        else
+            "<non-string/non-number>";
+
+        std.debug.print("Option: {s} = {s}\n", .{ key, val });
+
+        lua.pop(1);
+    }
 }

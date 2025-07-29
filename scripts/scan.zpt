@@ -1,9 +1,6 @@
-print("Calling testLua from Lua...")
-testLua()  -- Call the Zig function registered as 'testLua'
-print("Back in Lua after calling testLua")
+options = {
+    RHOST = "127.0.0.1", 
+    RPORT = "4444",
+    ICMPTYPE = "8"
 
-option1 = 100
-option2 = 200
-
-
-option = {}
+}
