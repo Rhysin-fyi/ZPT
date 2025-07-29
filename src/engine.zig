@@ -11,6 +11,7 @@ pub const EngineError = error{
     UserExit,
     FunctionNotFound,
     InvalidCommand,
+    InvalidPlugin,
 };
 
 pub const Cmds = enum {
@@ -36,9 +37,7 @@ pub fn parseCommand(input: []const u8, ctx: *main.GlobalState) !void {
         },
         .list => listPlugins(ctx.stdout, ctx.allocator),
         .load => {
-            ctx.sub_state = .Plugin;
-            ctx.plugin_name = ctx.user_input.peek() orelse undefined;
-            try luaTest(ctx);
+            try handlePlugin(ctx);
         },
     };
 }
@@ -69,21 +68,38 @@ fn listPlugins(stdout: std.fs.File.Writer, allocator: std.mem.Allocator) !void {
     try stdout.print("\n", .{});
 }
 
-fn luaTest(ctx: *main.GlobalState) !void {
+fn handlePlugin(ctx: *main.GlobalState) !void {
+    if (ctx.sub_state == .Default) {
+        ctx.plugin_name = ctx.user_input.next() orelse return EngineError.InvalidPlugin;
+        ctx.sub_state = .Plugin;
+        try loadPlugin(ctx);
+    }
+    std.debug.print("you're in the plugin handler for \"{s}\" plugin\n", .{ctx.plugin_name});
+}
+
+fn loadPlugin(ctx: *main.GlobalState) !void {
+    const plugin_path = try std.fmt.allocPrintZ(
+        ctx.allocator,
+        "./scripts/{s}.zpt",
+        .{ctx.plugin_name},
+    );
+    defer ctx.allocator.free(plugin_path);
+
     const lua = current_lua orelse try Lua.init(ctx.allocator);
     //defer lua.deinit();   handle this in plugin cleanup
 
     lua.openLibs();
-
     lua.pushFunction(&testLua);
     lua.setGlobal("testLua");
 
-    try lua.doFile("./scripts/scan.zpt");
+    try lua.doFile(plugin_path);
     // const option1
     // const option2
     const option1 = try getGlobalInt(lua, "option1");
     std.debug.print("option1 from lua: {d}\n", .{option1});
 }
+
+// fn cleanupPlugin(ctx: *main.GlobalState, lua: *Lua) !void {}
 
 export fn testLua(lua: ?*LuaState) callconv(.c) c_int {
     _ = lua;
