@@ -4,3 +4,6 @@ print("Back in Lua after calling testLua")
 
 option1 = 100
 option2 = 200
+
+
+option = {}

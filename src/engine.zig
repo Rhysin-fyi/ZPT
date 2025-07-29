@@ -107,6 +107,20 @@ export fn testLua(lua: ?*LuaState) callconv(.c) c_int {
     return 0;
 }
 
+fn checkOption(lua: *Lua) !zlua.Integer {
+    _ = try lua.getGlobal("options");
+    if (lua.isTable(-1)) {
+        _ = lua.getField(-1, "key");
+        _ = lua.getField(-2, "value");
+    }
+    if (lua.isString(-1)) {
+        const key = lua.toString(-2);
+        const value = lua.toString(-1);
+        std.debug.print("TESTING \nkey:{!c}\nvalue:{!c}\n", .{ key, value });
+    }
+    return 0;
+}
+
 fn getGlobalInt(lua: *Lua, var_name: [:0]const u8) !zlua.Integer {
     _ = try lua.getGlobal(var_name);
     const result = try lua.toInteger(-1);
