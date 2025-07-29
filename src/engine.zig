@@ -109,6 +109,7 @@ fn loadPlugin(ctx: *main.GlobalState) !void {
                     try ctx.stdout.print("Missing key for set\n", .{});
                     continue;
                 };
+                const key0 = try std.fmt.allocPrintZ(ctx.allocator, "{s}", .{key});
 
                 const val = tokenizer.next() orelse {
                     try ctx.stdout.print("Missing value for set\n", .{});
@@ -116,7 +117,7 @@ fn loadPlugin(ctx: *main.GlobalState) !void {
                 };
 
                 try ctx.stdout.print("SETTING {s} = {s}\n", .{ key, val });
-                _ = try setOption(lua, key, val);
+                _ = try setOption(lua, key0, val);
             } else if (std.mem.eql(u8, token, "get")) {
                 // Further handling...
                 _ = try getOptions(lua);
@@ -132,7 +133,7 @@ fn loadPlugin(ctx: *main.GlobalState) !void {
 
 // fn cleanupPlugin(ctx: *main.GlobalState, lua: *Lua) !void {}
 
-fn setOption(lua: *Lua, key: []const u8, val: []const u8) !void {
+fn setOption(lua: *Lua, key0: [:0]const u8, val: []const u8) !void {
     _ = try lua.getGlobal("options");
     if (!lua.isTable(-1)) {
         std.debug.print("Error: options is not a table\n", .{});
@@ -140,10 +141,10 @@ fn setOption(lua: *Lua, key: []const u8, val: []const u8) !void {
         return;
     }
 
-    //try lua.pushString(val);
-    //try lua.setField(-2, key);
-    _ = val;
-    _ = key;
+    _ = lua.pushString(val);
+    lua.setField(-2, key0);
+    // _ = val;
+    // _ = key;
     lua.pop(1);
 }
 
