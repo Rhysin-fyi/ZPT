@@ -7,11 +7,9 @@ pub const GlobalState = struct {
     stdin: std.fs.File.Reader = undefined,
     stdout: std.fs.File.Writer = undefined,
     user_input: std.mem.TokenIterator(u8, std.mem.DelimiterType.sequence) = undefined,
-    sub_state: enum { Default, Plugin } = undefined,
+    sub_state: enum { Default, Plugin, Exit } = undefined,
     plugin_name: []const u8 = undefined,
 };
-
-const FAIL_GRACEFULLY = false;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -24,17 +22,30 @@ pub fn main() !void {
         .sub_state = .Default,
     };
 
-    var buf: [1024]u8 = undefined;
     while (true) {
-        try ctx.stdout.print("zpt> ", .{});
+        const zpt_str: []const u8 = if (ctx.sub_state == .Plugin) try std.fmt.allocPrint(
+            ctx.allocator,
+            "zpt/{s}/> ",
+            .{ctx.plugin_name},
+        ) else "zpt> ";
+
+        try ctx.stdout.print("{s}", .{zpt_str});
+        var buf: [1024]u8 = undefined;
         const line = try ctx.stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
         const input = std.mem.trim(u8, line, " \r\n");
+        ctx.user_input = std.mem.tokenizeSequence(u8, input, " ");
 
-        engine.parseCommand(input, &ctx) catch |err| {
-            if (err == engine.EngineError.UserExit) return;
-            if (!FAIL_GRACEFULLY) return err else {
-                std.debug.print("{!}\n", .{err});
-            }
-        };
+        switch (ctx.sub_state) {
+            .Default => {
+                try engine.parseCommandDefault(&ctx);
+            },
+            .Plugin => {
+                try engine.parseCommandPlugin(&ctx);
+            },
+            .Exit => {
+                try ctx.stdout.print("Bye!", .{});
+                return;
+            },
+        }
     }
 }
