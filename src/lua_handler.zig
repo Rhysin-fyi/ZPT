@@ -94,48 +94,6 @@ fn cleanupPlugin(ctx: *main.GlobalState, lua: *Lua) void {
     ctx.sub_state = .Default;
 }
 
-fn cmd_add(lua: *Lua) c_int {
-    const a = lua.toInteger(1) catch 0;
-    const b = lua.toInteger(2) catch 0;
-    lua.pushInteger(a + b);
-    return 1;
-}
-
-fn cmd_upper(lua: *Lua) c_int {
-    const input = lua.toString(1) catch unreachable;
-    var buf: [256]u8 = undefined;
-    const upper = std.ascii.upperString(&buf, input);
-    _ = lua.pushString(upper);
-    return 1;
-}
-
-fn create_zig_table(lua: *Lua) callconv(.C) c_int {
-    lua.newTable();
-
-    lua.pushFunction(zlua.wrap(cmd_add));
-    lua.setField(-2, "add");
-    lua.pushFunction(zlua.wrap(cmd_upper));
-    lua.setField(-2, "upper");
-
-    return 1;
-}
-
-pub fn registerVTable(lua: *Lua, table_name: []const u8) !void {
-    _ = table_name;
-    lua.pushFunction(zlua.wrap(create_zig_table));
-    lua.setGlobal("get_zig_table");
-
-    try lua.doFile("scripts/test.lua");
-}
-
-fn getImports(lua: *Lua) !void {
-    var i: u16 = 0;
-    while (true) : (i += 1) {
-        if (std.mem.startsWith(u8, lua.toString(i), "import_") == false) break;
-        //TODO write logic to get import_name and pass it to register VTable
-    }
-}
-
 fn setOption(lua: *Lua, key: [:0]const u8, val: []const u8) !void {
     _ = try lua.getGlobal("options");
     if (!lua.isTable(-1)) {
