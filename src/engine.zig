@@ -28,6 +28,12 @@ pub fn parseCommandDefault(ctx: *main.GlobalState) !void {
     };
 }
 
+pub fn parseCommandPlugin(ctx: *main.GlobalState) !void {
+    lua_handler.handlePlugin(ctx) catch |e| {
+        std.debug.print("{any}", .{e});
+    };
+}
+
 fn showHelpDefault(stdout: std.fs.File.Writer) !void {
     try stdout.print(
         \\Available commands:
