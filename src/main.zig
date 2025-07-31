@@ -21,6 +21,7 @@ pub fn main() !void {
         .allocator = gpa.allocator(),
         .sub_state = .Default,
     };
+    var buf: [1024]u8 = undefined;
 
     while (true) {
         var prompt_buf: ?[]u8 = null;
@@ -41,8 +42,6 @@ pub fn main() !void {
         }
 
         try ctx.stdout.print("{s}", .{zpt_str});
-
-        var buf: [1024]u8 = undefined;
 
         const line = try ctx.stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
 

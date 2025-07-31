@@ -42,15 +42,23 @@ pub fn handlePlugin(ctx: *main.GlobalState) !void {
 
     try switch (plugin_cmd) {
         .get => _ = try getOptions(lua),
-        .set => { //this is prob too dense, need to rewrite or put more logic in the setter function
-            std.debug.print("In SET {s}\n", .{ctx.plugin_name});
-            if (ctx.user_input.next()) |k| {
-                if (ctx.user_input.next()) |val| {
-                    const key = try std.fmt.allocPrintZ(ctx.allocator, "{s}", .{k});
-                    try ctx.stdout.print("SETTING {s} = {s}\n", .{ key, val });
-                    _ = try setOption(lua, key, val);
-                } else return LuaHandlerError.NoSetVal;
-            } else return LuaHandlerError.NoSetKey;
+        .set => {
+            std.debug.print("In SET for plugin: {s}\n", .{ctx.plugin_name});
+
+            const key_token = ctx.user_input.next() orelse {
+                return LuaHandlerError.NoSetKey;
+            };
+
+            const val_token = ctx.user_input.next() orelse {
+                return LuaHandlerError.NoSetVal;
+            };
+
+            const key = try std.fmt.allocPrintZ(ctx.allocator, "{s}", .{key_token});
+            defer ctx.allocator.free(key); // Free after use
+
+            try ctx.stdout.print("SETTING {s} = {s}\n", .{ key, val_token });
+
+            _ = try setOption(lua, key, val_token);
         },
         .help => showHelpPlugin(ctx.stdout, ctx.plugin_name),
         .run => unreachable, //TODO implement
