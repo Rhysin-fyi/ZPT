@@ -31,7 +31,7 @@ ZPT consists of two core layers:
 
 - Plugin loader with auto-discovery from `scripts/`
 - Interactive REPL interface with commands:
-  - `help`, `exit`, `list`, `load <plugin>`
+  - `help`, `exit`, `list`, `load <plugin>`, `get`, `set`
 - Lua-Zig function bindings (call Zig from ZPTScript and pass structured data back)
 - Reads `options` from ZPTScript to populate state/config in Zig
 - Support for writing scanner, encoder, or payload-style plugins
