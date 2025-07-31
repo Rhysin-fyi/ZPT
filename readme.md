@@ -20,7 +20,7 @@ ZPT consists of two core layers:
   - Handles scanning, network sockets, encoders, and more
   - Uses [Ziglua](https://github.com/natecraddock/ziglua) to embed a Lua 5.* interpreter to created access to ZPTScripts
 
-- **Lua Plugins**:
+- **Lua Plugins (ZPTScript)**:
   - Scripted modules that declare options, run commands, or call into Zig
   - Executed in a controlled sandbox inside the Zig VM
   - Easy to create, modify, and reload
