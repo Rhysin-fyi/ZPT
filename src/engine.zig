@@ -30,7 +30,7 @@ pub fn parseCommandDefault(ctx: *main.GlobalState) !void {
 
 pub fn parseCommandPlugin(ctx: *main.GlobalState) !void {
     lua_handler.handlePlugin(ctx) catch |e| {
-        std.debug.print("{any}", .{e});
+        std.debug.print("{!}\n", .{e});
     };
 }
 
@@ -56,10 +56,4 @@ fn listPluginsDefault(stdout: std.fs.File.Writer, allocator: std.mem.Allocator) 
         try stdout.print("name: {s}\n", .{entry.path});
     }
     try stdout.print("\n", .{});
-}
-
-pub fn parseCommandPlugin(ctx: *main.GlobalState) !void {
-    lua_handler.handlePlugin(ctx) catch |e| {
-        std.debug.print("{!}\n", .{e});
-    };
 }

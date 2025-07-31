@@ -23,7 +23,6 @@ pub fn main() !void {
         .allocator = allocator,
         .sub_state = .Default,
     };
-    var buf: [1024]u8 = undefined;
 
     var buf: [1024]u8 = undefined;
     while (ctx.sub_state != .Exit) {
@@ -44,9 +43,9 @@ pub fn main() !void {
                 try engine.parseCommandDefault(ctx);
             },
             .Plugin => {
-                std.debug.print("ENTER SET {s}\n", .{ctx.plugin_name});
-                try engine.parseCommandPlugin(&ctx);
-                std.debug.print("BACK FROM SET {s}\n", .{ctx.plugin_name});
+                std.debug.print("ENTER SET {s}\n", .{ctx.plugin_name orelse "null"});
+                try engine.parseCommandPlugin(ctx);
+                std.debug.print("BACK FROM SET {s}\n", .{ctx.plugin_name orelse "null"});
             },
             .Exit => break,
         }
