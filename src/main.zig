@@ -21,24 +21,40 @@ pub fn main() !void {
         .allocator = gpa.allocator(),
         .sub_state = .Default,
     };
-    var buf: [1024]u8 = undefined;
 
     while (true) {
-        const zpt_str: []const u8 = if (ctx.sub_state == .Plugin) try std.fmt.allocPrint(
-            ctx.allocator,
-            "zpt/{s}/> ",
-            .{ctx.plugin_name},
-        ) else "zpt> ";
+        var prompt_buf: ?[]u8 = null;
+        defer if (prompt_buf) |p| ctx.allocator.free(p);
+
+        const zpt_str: []const u8 = if (ctx.sub_state == .Plugin) blk: {
+            const formatted = try std.fmt.allocPrint(
+                ctx.allocator,
+                "zpt/{s}/> ",
+                .{ctx.plugin_name},
+            );
+            prompt_buf = formatted;
+            break :blk formatted;
+        } else "zpt> ";
+
+        if (ctx.sub_state == .Plugin) {
+            std.debug.print("LOADED PLUGIN SET: {s}\n", .{ctx.plugin_name});
+        }
 
         try ctx.stdout.print("{s}", .{zpt_str});
+
+        var buf: [1024]u8 = undefined;
+
         const line = try ctx.stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
+
         const input = std.mem.trim(u8, line, "\r\n");
         ctx.user_input = std.mem.tokenizeSequence(u8, input, " ");
 
+        if (ctx.sub_state == .Plugin) {
+            std.debug.print("LOADED PLUGIN SET: {s}\n", .{ctx.plugin_name});
+        }
+
         switch (ctx.sub_state) {
-            .Default => {
-                try engine.parseCommandDefault(&ctx);
-            },
+            .Default => try engine.parseCommandDefault(&ctx),
             .Plugin => {
                 std.debug.print("ENTER SET {s}\n", .{ctx.plugin_name});
                 try engine.parseCommandPlugin(&ctx);
