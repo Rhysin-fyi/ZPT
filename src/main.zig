@@ -21,6 +21,7 @@ pub fn main() !void {
         .allocator = gpa.allocator(),
         .sub_state = .Default,
     };
+    var buf: [1024]u8 = undefined;
 
     while (true) {
         const zpt_str: []const u8 = if (ctx.sub_state == .Plugin) try std.fmt.allocPrint(
@@ -30,7 +31,6 @@ pub fn main() !void {
         ) else "zpt> ";
 
         try ctx.stdout.print("{s}", .{zpt_str});
-        var buf: [1024]u8 = undefined;
         const line = try ctx.stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
         const input = std.mem.trim(u8, line, " \r\n");
         ctx.user_input = std.mem.tokenizeSequence(u8, input, " ");
@@ -43,7 +43,7 @@ pub fn main() !void {
                 try engine.parseCommandPlugin(&ctx);
             },
             .Exit => {
-                try ctx.stdout.print("Bye!", .{});
+                try ctx.stdout.print("Bye!\n", .{});
                 return;
             },
         }
