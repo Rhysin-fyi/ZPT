@@ -1,12 +1,6 @@
 const std = @import("std");
-const zlua = @import("zlua");
 const main = @import("main.zig");
 const lua_handler = @import("lua_handler.zig");
-
-const Lua = zlua.Lua;
-const LuaState = zlua.LuaState;
-
-var current_lua: ?*Lua = null;
 
 pub const EngineError = error{
     FunctionNotFound,
@@ -23,8 +17,7 @@ pub const DefaultCmds = enum {
 pub fn parseCommandDefault(ctx: *main.GlobalState) !void {
     const default_cmd = std.meta.stringToEnum(
         DefaultCmds,
-        ctx.user_input.next() orelse
-            "help",
+        ctx.user_input.next() orelse "help",
     ) orelse DefaultCmds.help;
 
     try switch (default_cmd) {
@@ -61,6 +54,6 @@ fn listPluginsDefault(stdout: std.fs.File.Writer, allocator: std.mem.Allocator) 
 
 pub fn parseCommandPlugin(ctx: *main.GlobalState) !void {
     lua_handler.handlePlugin(ctx) catch |e| {
-        std.debug.print("{any}", .{e});
+        std.debug.print("{!}\n", .{e});
     };
 }

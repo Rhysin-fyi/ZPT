@@ -11,6 +11,8 @@ pub const LuaHandlerError = error{
     InvalidPlugin,
     NoSetKey,
     NoSetVal,
+    LuaNotLoaded,
+    PluginNotLoaded,
 };
 
 const PluginCmds = enum {
@@ -21,7 +23,7 @@ const PluginCmds = enum {
     quit,
 };
 
-fn showHelpPlugin(stdout: std.fs.File.Writer, plugin_name: []const u8) !void {
+fn showHelpPlugin(stdout: std.fs.File.Writer, plugin: []const u8) !void {
     try stdout.print(
         \\Available commands for {s}:
         \\    help - show this message
@@ -29,29 +31,32 @@ fn showHelpPlugin(stdout: std.fs.File.Writer, plugin_name: []const u8) !void {
         \\    run  - BROKEN
         \\    get  - see lua options
         \\    set <LUA_OPT> <VALUE> 
-    ++ "\n\n", .{plugin_name});
+    ++ "\n\n", .{plugin});
 }
 
 pub fn handlePlugin(ctx: *main.GlobalState) !void {
-    const lua = current_lua.?;
+    std.debug.print("{s}\n", .{ctx.plugin_name.?});
+    const lua = current_lua orelse return LuaHandlerError.LuaNotLoaded;
+    const safe_plugin_name = ctx.plugin_name orelse return LuaHandlerError.PluginNotLoaded;
 
     const plugin_cmd = std.meta.stringToEnum(
         PluginCmds,
         ctx.user_input.next() orelse "help",
     ) orelse PluginCmds.help;
 
+    std.debug.print("{s}\n", .{ctx.plugin_name.?});
     try switch (plugin_cmd) {
         .get => _ = try getOptions(lua),
-        .set => { //this is prob too dense, need to rewrite or put more logic in the setter function
-            if (ctx.user_input.next()) |k| {
-                if (ctx.user_input.next()) |val| {
-                    const key = try std.fmt.allocPrintZ(ctx.allocator, "{s}", .{k});
-                    try ctx.stdout.print("SETTING {s} = {s}\n", .{ key, val });
-                    _ = try setOption(lua, key, val);
-                } else return LuaHandlerError.NoSetVal;
-            } else return LuaHandlerError.NoSetKey;
+        .set => {
+            std.debug.print("{s}\n", .{ctx.plugin_name.?});
+            const key = try std.fmt.allocPrintZ(ctx.allocator, "{s}", .{
+                ctx.user_input.next() orelse return LuaHandlerError.NoSetKey,
+            });
+            const val = ctx.user_input.next() orelse return LuaHandlerError.NoSetVal;
+
+            _ = try setOption(lua, key, val);
         },
-        .help => showHelpPlugin(ctx.stdout, ctx.plugin_name),
+        .help => showHelpPlugin(ctx.stdout, safe_plugin_name),
         .run => unreachable, //TODO implement
         .quit => cleanupPlugin(ctx, lua),
     };
@@ -65,9 +70,9 @@ pub fn initPlugin(ctx: *main.GlobalState) !void {
     const plugin_path = try std.fmt.allocPrintZ(
         ctx.allocator,
         "./scripts/{s}.zpt",
-        .{ctx.plugin_name},
+        .{ctx.plugin_name.?},
     );
-    try ctx.stdout.print("Loading {s}\n\n", .{ctx.plugin_name});
+    try ctx.stdout.print("Loading {s}\n\n", .{ctx.plugin_name.?});
     defer ctx.allocator.free(plugin_path);
 
     var lua: *Lua = undefined;
@@ -85,12 +90,13 @@ pub fn initPlugin(ctx: *main.GlobalState) !void {
         lua.pop(1); // remove error message from stack
         return e;
     };
-    try showHelpPlugin(ctx.stdout, ctx.plugin_name);
+    try showHelpPlugin(ctx.stdout, ctx.plugin_name.?);
 }
 
 fn cleanupPlugin(ctx: *main.GlobalState, lua: *Lua) void {
     lua.deinit();
     current_lua = null;
+    ctx.plugin_name = null;
     ctx.sub_state = .Default;
 }
 

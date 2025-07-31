@@ -7,45 +7,46 @@ pub const GlobalState = struct {
     stdin: std.fs.File.Reader = undefined,
     stdout: std.fs.File.Writer = undefined,
     user_input: std.mem.TokenIterator(u8, std.mem.DelimiterType.sequence) = undefined,
-    sub_state: enum { Default, Plugin, Exit } = undefined,
-    plugin_name: []const u8 = undefined,
+    sub_state: enum { Default, Plugin, Exit } = .Default,
+    plugin_name: ?[]const u8 = null,
 };
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer if (gpa.deinit() != .ok) @panic("leak");
+    const allocator = gpa.allocator();
+    var ctx = try allocator.create(GlobalState);
 
-    var ctx = GlobalState{
+    ctx.* = .{
         .stdout = std.io.getStdOut().writer(),
         .stdin = std.io.getStdIn().reader(),
-        .allocator = gpa.allocator(),
+        .allocator = allocator,
         .sub_state = .Default,
     };
 
-    while (true) {
-        const zpt_str: []const u8 = if (ctx.sub_state == .Plugin) try std.fmt.allocPrint(
-            ctx.allocator,
-            "zpt/{s}/> ",
-            .{ctx.plugin_name},
-        ) else "zpt> ";
+    var buf: [1024]u8 = undefined;
+    while (ctx.sub_state != .Exit) {
+        //TESTING (it doesnt work)
+        @memset(&buf, 0);
+        if (ctx.plugin_name) |plugin| {
+            try ctx.stdout.print("zpt/{s}/>", .{plugin});
+        } else {
+            try ctx.stdout.print("zpt> ", .{});
+        }
 
-        try ctx.stdout.print("{s}", .{zpt_str});
-        var buf: [1024]u8 = undefined;
         const line = try ctx.stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
         const input = std.mem.trim(u8, line, " \r\n");
         ctx.user_input = std.mem.tokenizeSequence(u8, input, " ");
 
         switch (ctx.sub_state) {
             .Default => {
-                try engine.parseCommandDefault(&ctx);
+                try engine.parseCommandDefault(ctx);
             },
             .Plugin => {
-                try engine.parseCommandPlugin(&ctx);
+                try engine.parseCommandPlugin(ctx);
             },
-            .Exit => {
-                try ctx.stdout.print("Bye!", .{});
-                return;
-            },
+            .Exit => break,
         }
     }
+    try ctx.stdout.print("bye!\n", .{});
 }
