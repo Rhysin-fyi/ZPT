@@ -43,9 +43,7 @@ pub fn main() !void {
                 try engine.parseCommandDefault(ctx);
             },
             .Plugin => {
-                std.debug.print("ENTER SET {s}\n", .{ctx.plugin_name orelse "null"});
                 try engine.parseCommandPlugin(ctx);
-                std.debug.print("BACK FROM SET {s}\n", .{ctx.plugin_name orelse "null"});
             },
             .Exit => break,
         }
