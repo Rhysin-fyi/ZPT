@@ -32,7 +32,7 @@ pub fn main() !void {
 
         try ctx.stdout.print("{s}", .{zpt_str});
         const line = try ctx.stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
-        const input = std.mem.trim(u8, line, " \r\n");
+        const input = std.mem.trim(u8, line, "\r\n");
         ctx.user_input = std.mem.tokenizeSequence(u8, input, " ");
 
         switch (ctx.sub_state) {
@@ -40,7 +40,9 @@ pub fn main() !void {
                 try engine.parseCommandDefault(&ctx);
             },
             .Plugin => {
+                std.debug.print("ENTER SET {s}\n", .{ctx.plugin_name});
                 try engine.parseCommandPlugin(&ctx);
+                std.debug.print("BACK FROM SET {s}\n", .{ctx.plugin_name});
             },
             .Exit => {
                 try ctx.stdout.print("Bye!\n", .{});

@@ -43,6 +43,7 @@ pub fn handlePlugin(ctx: *main.GlobalState) !void {
     try switch (plugin_cmd) {
         .get => _ = try getOptions(lua),
         .set => { //this is prob too dense, need to rewrite or put more logic in the setter function
+            std.debug.print("In SET {s}\n", .{ctx.plugin_name});
             if (ctx.user_input.next()) |k| {
                 if (ctx.user_input.next()) |val| {
                     const key = try std.fmt.allocPrintZ(ctx.allocator, "{s}", .{k});
