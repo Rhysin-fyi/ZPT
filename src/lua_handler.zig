@@ -38,18 +38,17 @@ pub fn handlePlugin(ctx: *main.GlobalState) !void {
     const lua = current_lua orelse return LuaHandlerError.LuaNotLoaded;
     const safe_plugin_name = ctx.plugin_name orelse return LuaHandlerError.PluginNotLoaded;
 
-    const plugin_cmd = std.meta.stringToEnum(
-        PluginCmds,
-        ctx.user_input.next() orelse "help",
-    ) orelse PluginCmds.help;
+    // TODO: build a while loop around this
+    const plugin_cmd = try ctx.cmd_parser.parseInputEnum(PluginCmds);
 
     try switch (plugin_cmd) {
         .get => _ = try getOptions(lua),
         .set => {
             const key = try std.fmt.allocPrintZ(ctx.allocator, "{s}", .{
-                ctx.user_input.next() orelse return LuaHandlerError.NoSetKey,
+                ctx.cmd_parser.parseNext() orelse return LuaHandlerError.NoSetKey,
             });
-            const val = ctx.user_input.next() orelse return LuaHandlerError.NoSetVal;
+            defer ctx.allocator.free(key);
+            const val = ctx.cmd_parser.parseNext() orelse return LuaHandlerError.NoSetVal;
 
             _ = try setOption(lua, key, val);
         },
@@ -61,7 +60,7 @@ pub fn handlePlugin(ctx: *main.GlobalState) !void {
 
 // called from main repl: load <plugin>
 pub fn initPlugin(ctx: *main.GlobalState) !void {
-    ctx.plugin_name = try ctx.allocator.dupe(u8, ctx.user_input.peek() orelse return LuaHandlerError.InvalidPlugin);
+    ctx.plugin_name = try ctx.allocator.dupe(u8, ctx.cmd_parser.parseNext() orelse return LuaHandlerError.InvalidPlugin);
     ctx.sub_state = .Plugin;
 
     const plugin_path = try std.fmt.allocPrintZ(
@@ -69,8 +68,8 @@ pub fn initPlugin(ctx: *main.GlobalState) !void {
         "./scripts/{s}.zpt",
         .{ctx.plugin_name.?},
     );
-    try ctx.stdout.print("Loading {s}\n\n", .{ctx.plugin_name.?});
     defer ctx.allocator.free(plugin_path);
+    try ctx.stdout.print("Loading {s}\n\n", .{ctx.plugin_name.?});
 
     var lua: *Lua = undefined;
     if (current_lua) |_lua| {

@@ -1,12 +1,13 @@
 const std = @import("std");
 const engine = @import("engine.zig");
 const zlua = @import("zlua");
+const cmd_parser = @import("cmd_parser.zig");
 
 pub const GlobalState = struct {
     allocator: std.mem.Allocator = undefined,
     stdin: std.fs.File.Reader = undefined,
     stdout: std.fs.File.Writer = undefined,
-    user_input: std.mem.TokenIterator(u8, std.mem.DelimiterType.sequence) = undefined,
+    cmd_parser: cmd_parser.CommandParser = undefined,
     sub_state: enum { Default, Plugin, Exit } = .Default,
     plugin_name: ?[]const u8 = null,
 };
@@ -16,6 +17,7 @@ pub fn main() !void {
     defer if (gpa.deinit() != .ok) @panic("leak");
     const allocator = gpa.allocator();
     var ctx = try allocator.create(GlobalState);
+    defer allocator.destroy(ctx);
 
     ctx.* = .{
         .stdout = std.io.getStdOut().writer(),
@@ -24,19 +26,20 @@ pub fn main() !void {
         .sub_state = .Default,
     };
 
+    ctx.cmd_parser = cmd_parser.CommandParser.init(
+        allocator,
+        std.io.getStdIn().reader(),
+    );
+    defer ctx.cmd_parser.deinit();
+
     var buf: [1024]u8 = undefined;
     while (ctx.sub_state != .Exit) {
-        //TESTING (it doesnt work)
         @memset(&buf, 0);
         if (ctx.plugin_name) |plugin| {
             try ctx.stdout.print("zpt/{s}/>", .{plugin});
         } else {
             try ctx.stdout.print("zpt> ", .{});
         }
-
-        const line = try ctx.stdin.readUntilDelimiterOrEof(&buf, '\n') orelse break;
-        const input = std.mem.trim(u8, line, "\r\n");
-        ctx.user_input = std.mem.tokenizeSequence(u8, input, " ");
 
         switch (ctx.sub_state) {
             .Default => {
@@ -45,8 +48,15 @@ pub fn main() !void {
             .Plugin => {
                 try engine.parseCommandPlugin(ctx);
             },
-            .Exit => break,
+            .Exit => {
+                try ctx.stdout.print("bye!\n", .{});
+                exit();
+            },
         }
     }
     try ctx.stdout.print("bye!\n", .{});
+}
+
+pub fn exit() void {
+    std.process.cleanExit();
 }

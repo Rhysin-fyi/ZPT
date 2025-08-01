@@ -15,10 +15,7 @@ pub const DefaultCmds = enum {
 };
 
 pub fn parseCommandDefault(ctx: *main.GlobalState) !void {
-    const default_cmd = std.meta.stringToEnum(
-        DefaultCmds,
-        ctx.user_input.next() orelse "help",
-    ) orelse DefaultCmds.help;
+    const default_cmd = try ctx.cmd_parser.parseInputEnum(DefaultCmds);
 
     try switch (default_cmd) {
         .help => showHelpDefault(ctx.stdout),
